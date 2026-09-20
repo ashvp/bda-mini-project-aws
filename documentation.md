@@ -470,7 +470,7 @@ The test suite runs with **pytest** against an isolated in-memory SQLite databas
 pytest -v
 ```
 
-All 13 test cases verify registration, bcrypt authentication, role enforcement, S3 image uploads, ticket assignment, and admin oversight.
+All 18 test cases verify registration, bcrypt authentication, role enforcement, S3 image uploads, ticket assignment, admin oversight, and custom 404 security handling.
 
 ---
 
