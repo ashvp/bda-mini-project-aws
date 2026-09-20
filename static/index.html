@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Property Maintenance Tracking Portal</title>
+  <!-- Bootstrap 5.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f4f6f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .navbar-brand {
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .card {
+      border-radius: 0.75rem;
+      border: 1px solid rgba(0,0,0,0.08);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .card-header {
+      border-top-left-radius: 0.75rem !important;
+      border-top-right-radius: 0.75rem !important;
+      background-color: #ffffff;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      font-weight: 600;
+    }
+    .stat-card {
+      transition: transform 0.15s ease-in-out;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+    }
+    .ticket-thumb {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      border: 1px solid #dee2e6;
+      transition: opacity 0.2s;
+    }
+    .ticket-thumb:hover {
+      opacity: 0.85;
+    }
+    .badge-category {
+      font-size: 0.8rem;
+      padding: 0.35em 0.65em;
+    }
+    .preview-box {
+      max-height: 200px;
+      overflow: hidden;
+      border-radius: 0.5rem;
+      display: none;
+    }
+    .preview-box img {
+      max-height: 200px;
+      width: auto;
+      object-fit: contain;
+    }
+    footer {
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+        <i class="bi bi-building-gear fs-4"></i>
+        <span>PropertyCare</span>
+      </a>
+
+      <div class="d-flex align-items-center gap-3">
+        <a href="/docs" target="_blank" class="btn btn-sm btn-outline-light d-none d-md-inline-flex align-items-center gap-1">
+          <i class="bi bi-file-earmark-code"></i> API Docs
+        </a>
+
+        <!-- Authenticated User Profile / Logout -->
+        <div id="navUserSection" class="d-none d-flex align-items-center gap-2">
+          <span id="navUserBadge" class="badge bg-light text-primary fs-6 px-3 py-2 rounded-pill shadow-sm">
+            <i class="bi bi-person-fill"></i> <span id="navUsername">User</span>
+          </span>
+          <button id="logoutBtn" class="btn btn-sm btn-danger d-flex align-items-center gap-1" onclick="logout()">
+            <i class="bi bi-box-arrow-right"></i> Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container py-4">
+
+    <!-- Global Alert Box -->
+    <div id="alertBox" class="alert d-none alert-dismissible fade show shadow-sm" role="alert">
+      <span id="alertMessage"></span>
+      <button type="button" class="btn-close" onclick="hideAlert()"></button>
+    </div>
+
+    <!-- ==================== AUTH SECTION (LOGGED OUT) ==================== -->
+    <div id="authSection" class="row justify-content-center pt-3">
+      <div class="col-md-7 col-lg-5">
+        <div class="card shadow-sm">
+          <div class="card-header p-0">
+            <ul class="nav nav-tabs nav-fill" id="authTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active py-3 fw-semibold" id="login-tab" data-bs-toggle="tab" data-bs-target="#loginTabPane" type="button" role="tab">
+                  <i class="bi bi-box-arrow-in-right"></i> User Login
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link py-3 fw-semibold" id="register-tab" data-bs-toggle="tab" data-bs-target="#registerTabPane" type="button" role="tab">
+                  <i class="bi bi-person-plus"></i> Resident Register
+                </button>
+              </li>
+            </ul>
+          </div>
+          <div class="card-body p-4">
+            <div class="tab-content" id="authTabContent">
+
+              <!-- LOGIN FORM (UNIFIED) -->
+              <div class="tab-pane fade show active" id="loginTabPane" role="tabpanel">
+                <p class="text-muted small mb-3">Login with your account username and password credentials.</p>
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small">Username</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-person"></i></span>
+                      <input type="text" class="form-control" id="loginUsername" placeholder="username" required>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small">Password</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-key"></i></span>
+                      <input type="password" class="form-control" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="loginBtn">
+                    <span id="loginSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+                    <i class="bi bi-box-arrow-in-right"></i> Sign In
+                  </button>
+                </form>
+
+                <!-- Demo helper buttons -->
+                <!-- <div class="border-top mt-4 pt-3">
+                  <span class="text-muted small fw-semibold">Quick Demo Login:</span>
+                  <div class="d-flex gap-2 mt-2">
+                    <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="quickFill('admin', 'AdminSecurePassword123!')">
+                      <i class="bi bi-shield-lock"></i> Fill Admin
+                    </button>
+                  </div>
+                </div> -->
+              </div>
+
+              <!-- REGISTER FORM (RESIDENT) -->
+              <div class="tab-pane fade" id="registerTabPane" role="tabpanel">
+                <p class="text-muted small mb-3">New resident? Register your apartment details to report maintenance issues.</p>
+                <form id="registerForm" onsubmit="handleRegister(event)">
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small">Resident Username</label>
+                    <input type="text" class="form-control" id="regUsername" placeholder="John Doe" required minlength="3">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small">Password</label>
+                    <input type="password" class="form-control" id="regPassword" placeholder="Minimum 3 characters" required minlength="3">
+                  </div>
+                  <div class="row g-2 mb-3">
+                    <div class="col-sm-6">
+                      <label class="form-label fw-semibold small">Apartment Block</label>
+                      <input type="text" class="form-control" id="regBlock" placeholder="A" required case-insensitive>
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label fw-semibold small">House / Flat No.</label>
+                      <input type="text" class="form-control" id="regHouse" placeholder="302" required>
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn-success w-100 py-2 fw-semibold" id="registerBtn">
+                    <span id="registerSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+                    <i class="bi bi-check-circle"></i> Create Resident Account
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==================== RESIDENT PORTAL ==================== -->
+    <div id="residentSection" class="d-none">
+      <div class="row g-4">
+
+        <!-- Left: Submit Request -->
+        <div class="col-lg-5">
+          <div class="card shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-header bg-white py-3">
+              <h5 class="mb-0 text-primary d-flex align-items-center gap-2">
+                <i class="bi bi-tools"></i> Report a Maintenance Issue
+              </h5>
+            </div>
+            <div class="card-body p-4">
+              <div id="residentHouseBadge" class="alert alert-info py-2 small mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-house-door-fill fs-5"></i>
+                <span id="residentHouseText">Linked House: Loading...</span>
+              </div>
+
+              <form id="maintenanceForm" onsubmit="handleCreateTicket(event)">
+                <div class="mb-3">
+                  <label class="form-label fw-semibold small">Problem Category</label>
+                  <select class="form-select" id="ticketCategory" required>
+                    <option value="" disabled selected>Select category...</option>
+                    <option value="Plumbing & Leakage">Plumbing & Water Leakage</option>
+                    <option value="AC / HVAC System">AC / Air Conditioning</option>
+                    <option value="Electrical & Lighting">Electrical & Lighting</option>
+                    <option value="Carpentry & Furniture">Carpentry & Doors/Windows</option>
+                    <option value="Wall Seepage & Paint">Wall Seepage & Paint</option>
+                    <option value="Appliance Repair">Appliance Repair</option>
+                    <option value="General Maintenance">General / Other</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold small">Describe the Problem</label>
+                  <textarea class="form-control" id="ticketDetails" rows="3" placeholder="Provide detailed information (e.g. pipe leaking under kitchen sink)..." required minlength="5"></textarea>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold small">Photo Evidence (Upload/Camera)</label>
+                  <input type="file" class="form-control" id="ticketImage" accept="image/jpeg,image/png,image/webp,image/gif" required onchange="previewSelectedImage(event)">
+                  <div class="form-text small">Accepted formats: JPG, PNG, WEBP (Max 10MB). Uploaded to AWS S3.</div>
+                </div>
+
+                <!-- Preview selected image -->
+                <div id="imagePreviewBox" class="preview-box mb-3 text-center border p-2 bg-light">
+                  <img id="imagePreview" src="" alt="Photo Preview">
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="submitTicketBtn">
+                  <span id="submitTicketSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+                  <i class="bi bi-cloud-arrow-up-fill"></i> Submit Maintenance Ticket
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: My Requests List -->
+        <div class="col-lg-7">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+              <h5 class="mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history"></i> My Maintenance Requests
+              </h5>
+              <button class="btn btn-sm btn-outline-secondary" onclick="loadResidentTickets()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+            <div class="card-body p-3">
+              <div id="residentTicketsList" class="d-flex flex-column gap-3">
+                <div class="text-center text-muted py-5">
+                  <div class="spinner-border text-primary" role="status"></div>
+                  <div class="mt-2 small">Loading your requests...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ==================== ADMIN PORTAL ==================== -->
+    <div id="adminSection" class="d-none">
+
+      <!-- Admin Top Stats -->
+      <div class="row g-3 mb-4" id="adminStatsRow">
+        <div class="col-6 col-md-3">
+          <div class="card stat-card bg-primary text-white p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fs-4 fw-bold" id="statTotalTickets">0</div>
+                <div class="small opacity-75">Total Issues</div>
+              </div>
+              <i class="bi bi-clipboard2-data fs-2 opacity-75"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card bg-warning text-dark p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fs-4 fw-bold" id="statUnassignedTickets">0</div>
+                <div class="small opacity-75">Pending Assignment</div>
+              </div>
+              <i class="bi bi-exclamation-triangle fs-2 opacity-75"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card bg-success text-white p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fs-4 fw-bold" id="statAssignedTickets">0</div>
+                <div class="small opacity-75">Assigned / In Progress</div>
+              </div>
+              <i class="bi bi-person-check fs-2 opacity-75"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card bg-dark text-white p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fs-4 fw-bold" id="statTotalResidents">0</div>
+                <div class="small opacity-75">Registered Residents</div>
+              </div>
+              <i class="bi bi-houses fs-2 opacity-75"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Navigation Tabs -->
+      <ul class="nav nav-pills mb-3" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active fw-semibold" id="admin-tickets-tab" data-bs-toggle="pill" data-bs-target="#adminTicketsPane" type="button">
+            <i class="bi bi-list-task"></i> Maintenance Requests
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-semibold" id="admin-users-tab" data-bs-toggle="pill" data-bs-target="#adminUsersPane" type="button" onclick="loadAdminUsers()">
+            <i class="bi bi-people"></i> Residents & Users
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-semibold" id="admin-houses-tab" data-bs-toggle="pill" data-bs-target="#adminHousesPane" type="button" onclick="loadAdminHouses()">
+            <i class="bi bi-buildings"></i> Properties & Flats
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="adminTabContent">
+
+        <!-- ADMIN TAB 1: MAINTENANCE REQUESTS -->
+        <div class="tab-pane fade show active" id="adminTicketsPane" role="tabpanel">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white py-3 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+              <h5 class="mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check text-primary"></i> Oversee Maintenance Requests
+              </h5>
+
+              <!-- Filters -->
+              <div class="d-flex gap-2 align-items-center">
+                <select class="form-select form-select-sm w-auto" id="adminFilterStatus" onchange="loadAdminTickets()">
+                  <option value="">All Statuses</option>
+                  <option value="false">Pending (Unassigned)</option>
+                  <option value="true">Assigned Only</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" onclick="loadAdminTickets()">
+                  <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+              </div>
+            </div>
+
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 50px;">#ID</th>
+                      <th style="width: 90px;">Photo</th>
+                      <th>Resident & Property</th>
+                      <th>Category & Details</th>
+                      <th>Date</th>
+                      <th>Assignment Status</th>
+                      <th style="width: 130px;" class="text-end">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminTicketsTableBody">
+                    <tr>
+                      <td colspan="7" class="text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary"></div> Loading tickets...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADMIN TAB 2: USERS DIRECTORY -->
+        <div class="tab-pane fade" id="adminUsersPane" role="tabpanel">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+              <h5 class="mb-0 text-dark"><i class="bi bi-people-fill text-primary"></i> Registered Users Directory</h5>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>User ID</th>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th>House ID</th>
+                      <th>Block & House Number</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminUsersTableBody">
+                    <tr><td colspan="5" class="text-center py-3 text-muted">Click Refresh to load users</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADMIN TAB 3: HOUSES DIRECTORY -->
+        <div class="tab-pane fade" id="adminHousesPane" role="tabpanel">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+              <h5 class="mb-0 text-dark"><i class="bi bi-building text-primary"></i> Registered Property Units</h5>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>House ID</th>
+                      <th>Apartment Block Number</th>
+                      <th>House / Flat Number</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminHousesTableBody">
+                    <tr><td colspan="3" class="text-center py-3 text-muted">Click Refresh to load properties</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Image Viewer Modal -->
+  <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title" id="imageModalTitle"><i class="bi bi-image"></i> Maintenance Photo Evidence</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center p-0 bg-black">
+          <img id="imageModalImg" src="" alt="Full view" class="img-fluid" style="max-height: 80vh;">
+        </div>
+        <div class="modal-footer justify-content-between">
+          <span class="small text-muted" id="imageModalUrlText"></span>
+          <a id="imageModalDownload" href="" target="_blank" class="btn btn-sm btn-primary">
+            <i class="bi bi-box-arrow-up-right"></i> Open Original
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Technician Modal (Admin) -->
+  <div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-person-gear text-primary"></i> Assign Technician</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="assignForm" onsubmit="handleAssignTicket(event)">
+          <div class="modal-body">
+            <input type="hidden" id="assignTicketId">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Ticket Information</label>
+              <div class="p-2 bg-light rounded small" id="assignTicketSummary"></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Assign Technician / Staff Name</label>
+              <input type="text" class="form-control" id="assignNameInput" placeholder="e.g. Carlos (Chief Plumber) or AC Repair Team" required>
+              <div class="form-text small">Enter the individual or contractor who will resolve this issue.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary fw-semibold" id="confirmAssignBtn">
+              <span id="assignSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+              <i class="bi bi-check2-circle"></i> Save Assignment
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-top py-3 text-center text-muted small">
+    <div class="container">
+      Property Maintenance Tracking Platform &bull; Ashwin V &bull; Bharat K
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5.3 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Application Logic -->
+  <script>
+    // State
+    let authToken = localStorage.getItem("access_token") || null;
+    let currentUser = null;
+
+    // Modals
+    let imageModalInstance = null;
+    let assignModalInstance = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      imageModalInstance = new bootstrap.Modal(document.getElementById("imageModal"));
+      assignModalInstance = new bootstrap.Modal(document.getElementById("assignModal"));
+
+      if (authToken) {
+        verifySession();
+      } else {
+        showAuthSection();
+      }
+    });
+
+    // Alert helper
+    function showAlert(msg, type = "danger") {
+      const box = document.getElementById("alertBox");
+      const text = document.getElementById("alertMessage");
+      box.className = `alert alert-${type} alert-dismissible fade show shadow-sm`;
+      text.innerText = msg;
+      box.classList.remove("d-none");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function hideAlert() {
+      document.getElementById("alertBox").classList.add("d-none");
+    }
+
+    // Quick fill helper for testing
+    function quickFill(user, pw) {
+      document.getElementById("loginUsername").value = user;
+      document.getElementById("loginPassword").value = pw;
+    }
+
+    // Image preview helper
+    function previewSelectedImage(event) {
+      const file = event.target.files[0];
+      const previewBox = document.getElementById("imagePreviewBox");
+      const previewImg = document.getElementById("imagePreview");
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewImg.src = e.target.result;
+          previewBox.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+      } else {
+        previewBox.style.display = "none";
+      }
+    }
+
+    // Modal photo view
+    function viewPhoto(url, title = "Maintenance Photo Evidence") {
+      document.getElementById("imageModalImg").src = url;
+      document.getElementById("imageModalTitle").innerText = title;
+      document.getElementById("imageModalUrlText").innerText = url;
+      document.getElementById("imageModalDownload").href = url;
+      imageModalInstance.show();
+    }
+
+    // Session verification
+    async function verifySession() {
+      try {
+        const res = await fetch("/auth/me", {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          currentUser = await res.json();
+          renderAuthenticatedView();
+        } else {
+          logout();
+        }
+      } catch (err) {
+        console.error(err);
+        logout();
+      }
+    }
+
+    function showAuthSection() {
+      document.getElementById("authSection").classList.remove("d-none");
+      document.getElementById("residentSection").classList.add("d-none");
+      document.getElementById("adminSection").classList.add("d-none");
+      document.getElementById("navUserSection").classList.add("d-none");
+    }
+
+    function renderAuthenticatedView() {
+      hideAlert();
+      document.getElementById("authSection").classList.add("d-none");
+      document.getElementById("navUserSection").classList.remove("d-none");
+
+      const badge = document.getElementById("navUserBadge");
+      const name = document.getElementById("navUsername");
+
+      if (currentUser.isAdmin) {
+        name.innerText = `Admin: ${currentUser.username}`;
+        badge.className = "badge bg-danger text-white fs-6 px-3 py-2 rounded-pill shadow-sm";
+        document.getElementById("residentSection").classList.add("d-none");
+        document.getElementById("adminSection").classList.remove("d-none");
+        loadAdminDashboard();
+      } else {
+        const houseInfo = currentUser.house 
+          ? `(${currentUser.house.apartment_block_num}, Flat ${currentUser.house.house_num})`
+          : "";
+        name.innerText = `${currentUser.username} ${houseInfo}`;
+        badge.className = "badge bg-light text-primary fs-6 px-3 py-2 rounded-pill shadow-sm";
+        document.getElementById("adminSection").classList.add("d-none");
+        document.getElementById("residentSection").classList.remove("d-none");
+
+        if (currentUser.house) {
+          document.getElementById("residentHouseText").innerText = 
+            `Your Apartment: ${currentUser.house.apartment_block_num} - Flat #${currentUser.house.house_num} (House ID: ${currentUser.houseid})`;
+        }
+        loadResidentTickets();
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("access_token");
+      authToken = null;
+      currentUser = null;
+      showAuthSection();
+      showAlert("You have been signed out.", "info");
+    }
+
+    // --- AUTH ACTIONS ---
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideAlert();
+      const user = document.getElementById("loginUsername").value.trim();
+      const pw = document.getElementById("loginPassword").value;
+      const spinner = document.getElementById("loginSpinner");
+      const btn = document.getElementById("loginBtn");
+
+      spinner.classList.remove("d-none");
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: user, password: pw })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Invalid login credentials.");
+        }
+
+        authToken = data.access_token;
+        currentUser = data.user;
+        localStorage.setItem("access_token", authToken);
+        renderAuthenticatedView();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.classList.add("d-none");
+        btn.disabled = false;
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      hideAlert();
+      const user = document.getElementById("regUsername").value.trim();
+      const pw = document.getElementById("regPassword").value;
+      const block = document.getElementById("regBlock").value.trim();
+      const house = document.getElementById("regHouse").value.trim();
+      const spinner = document.getElementById("registerSpinner");
+      const btn = document.getElementById("registerBtn");
+
+      spinner.classList.remove("d-none");
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: user,
+            password: pw,
+            apartment_block_num: block,
+            house_num: house
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Registration failed.");
+        }
+
+        // Auto login with new user
+        document.getElementById("loginUsername").value = user;
+        document.getElementById("loginPassword").value = pw;
+        const loginTab = new bootstrap.Tab(document.getElementById("login-tab"));
+        loginTab.show();
+        showAlert(`Registration successful for '${data.username}'! You can now sign in.`, "success");
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.classList.add("d-none");
+        btn.disabled = false;
+      }
+    }
+
+    // --- RESIDENT ACTIONS ---
+
+    async function handleCreateTicket(e) {
+      e.preventDefault();
+      hideAlert();
+      const category = document.getElementById("ticketCategory").value;
+      const details = document.getElementById("ticketDetails").value.trim();
+      const imageFile = document.getElementById("ticketImage").files[0];
+      const spinner = document.getElementById("submitTicketSpinner");
+      const btn = document.getElementById("submitTicketBtn");
+
+      if (!imageFile) {
+        showAlert("Please attach a photo of the maintenance problem.", "warning");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("problem_category", category);
+      formData.append("details", details);
+      formData.append("image", imageFile);
+
+      spinner.classList.remove("d-none");
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/maintenance", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${authToken}` },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Failed to submit maintenance request.");
+        }
+
+        showAlert("Maintenance request submitted successfully! An administrator will review and assign staff.", "success");
+        document.getElementById("maintenanceForm").reset();
+        document.getElementById("imagePreviewBox").style.display = "none";
+        loadResidentTickets();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.classList.add("d-none");
+        btn.disabled = false;
+      }
+    }
+
+    async function loadResidentTickets() {
+      const container = document.getElementById("residentTicketsList");
+      try {
+        const res = await fetch("/maintenance/my", {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        if (!res.ok) throw new Error("Could not load tickets");
+        const tickets = await res.json();
+
+        if (tickets.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+              <h6>No maintenance requests yet</h6>
+              <p class="small">Use the form on the left to submit any property repairs or defects.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = tickets.map(t => {
+          const dateStr = new Date(t.date).toLocaleString();
+          const assignedBadge = t.isAssignedTo
+            ? `<span class="badge bg-success"><i class="bi bi-person-check"></i> Assigned to: ${escapeHtml(t.isAssignedTo)}</span>`
+            : `<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Awaiting Assignment</span>`;
+
+          return `
+            <div class="card border p-3">
+              <div class="d-flex gap-3 align-items-start">
+                <img src="${t.image_url}" alt="Evidence" class="ticket-thumb" onclick="viewPhoto('${t.image_url}', 'Ticket #${t.maintanance_id} Photo Evidence')">
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-primary badge-category">${escapeHtml(t.problem_category)}</span>
+                    <span class="text-muted small">${dateStr}</span>
+                  </div>
+                  <h6 class="mb-1 text-dark">${escapeHtml(t.details)}</h6>
+                  <div class="mt-2 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Ticket #${t.maintanance_id}</span>
+                    ${assignedBadge}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      } catch (err) {
+        container.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+      }
+    }
+
+    // --- ADMIN ACTIONS ---
+
+    async function loadAdminDashboard() {
+      loadAdminStats();
+      loadAdminTickets();
+    }
+
+    async function loadAdminStats() {
+      try {
+        const res = await fetch("/admin/stats", {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          const s = await res.json();
+          document.getElementById("statTotalTickets").innerText = s.total_maintenance_requests;
+          document.getElementById("statUnassignedTickets").innerText = s.unassigned_requests;
+          document.getElementById("statAssignedTickets").innerText = s.assigned_requests;
+          document.getElementById("statTotalResidents").innerText = s.total_residents;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadAdminTickets() {
+      const tbody = document.getElementById("adminTicketsTableBody");
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> Fetching tickets...</td></tr>`;
+
+      const filterStatus = document.getElementById("adminFilterStatus").value;
+      let url = "/admin/maintenance";
+      if (filterStatus !== "") {
+        url += `?is_assigned=${filterStatus}`;
+      }
+
+      try {
+        const res = await fetch(url, {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        if (!res.ok) throw new Error("Could not retrieve tickets.");
+        const tickets = await res.json();
+
+        if (tickets.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">No maintenance requests found matching criteria.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = tickets.map(t => {
+          const dateStr = new Date(t.date).toLocaleDateString() + " " + new Date(t.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          const residentName = t.user ? escapeHtml(t.user.username) : `User #${t.userid}`;
+          const houseText = t.house 
+            ? `${escapeHtml(t.house.apartment_block_num)} - Flat ${escapeHtml(t.house.house_num)}`
+            : `House #${t.houseid}`;
+
+          const assignmentBadge = t.isAssignedTo
+            ? `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-check-circle"></i> ${escapeHtml(t.isAssignedTo)}</span>`
+            : `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="bi bi-hourglass-split"></i> Unassigned</span>`;
+
+          const assignBtnLabel = t.isAssignedTo ? "Reassign" : "Assign Staff";
+          const assignBtnClass = t.isAssignedTo ? "btn-outline-secondary" : "btn-primary";
+
+          return `
+            <tr>
+              <td class="fw-bold text-muted">#${t.maintanance_id}</td>
+              <td>
+                <img src="${t.image_url}" alt="Thumb" class="ticket-thumb" onclick="viewPhoto('${t.image_url}', 'Ticket #${t.maintanance_id} - ${escapeHtml(t.problem_category)}')">
+              </td>
+              <td>
+                <div class="fw-semibold">${residentName}</div>
+                <div class="small text-muted"><i class="bi bi-geo-alt"></i> ${houseText}</div>
+              </td>
+              <td>
+                <span class="badge bg-primary badge-category mb-1">${escapeHtml(t.problem_category)}</span>
+                <div class="small text-dark text-truncate" style="max-width: 320px;" title="${escapeHtml(t.details)}">
+                  ${escapeHtml(t.details)}
+                </div>
+              </td>
+              <td class="small text-muted">${dateStr}</td>
+              <td>${assignmentBadge}</td>
+              <td class="text-end">
+                <button class="btn btn-sm ${assignBtnClass} d-inline-flex align-items-center gap-1" onclick="openAssignModal(${t.maintanance_id}, '${escapeHtml(t.problem_category)}', '${houseText}', '${t.isAssignedTo ? escapeHtml(t.isAssignedTo) : ''}')">
+                  <i class="bi bi-person-gear"></i> ${assignBtnLabel}
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">${err.message}</td></tr>`;
+      }
+    }
+
+    function openAssignModal(ticketId, category, house, currentAssignee) {
+      document.getElementById("assignTicketId").value = ticketId;
+      document.getElementById("assignTicketSummary").innerHTML = `
+        <strong>Ticket #${ticketId}:</strong> ${category}<br>
+        <span class="text-muted"><i class="bi bi-geo-alt"></i> ${house}</span>
+      `;
+      document.getElementById("assignNameInput").value = currentAssignee || "";
+      assignModalInstance.show();
+    }
+
+    async function handleAssignTicket(e) {
+      e.preventDefault();
+      const ticketId = document.getElementById("assignTicketId").value;
+      const assignee = document.getElementById("assignNameInput").value.trim();
+      const spinner = document.getElementById("assignSpinner");
+      const btn = document.getElementById("confirmAssignBtn");
+
+      spinner.classList.remove("d-none");
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/admin/maintenance/${ticketId}/assign`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ isAssignedTo: assignee })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to update assignment.");
+
+        assignModalInstance.hide();
+        showAlert(`Ticket #${ticketId} successfully assigned to '${assignee}'!`, "success");
+        loadAdminStats();
+        loadAdminTickets();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.classList.add("d-none");
+        btn.disabled = false;
+      }
+    }
+
+    async function loadAdminUsers() {
+      const tbody = document.getElementById("adminUsersTableBody");
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>`;
+      try {
+        const res = await fetch("/admin/users", {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const users = await res.json();
+        tbody.innerHTML = users.map(u => `
+          <tr>
+            <td>${u.userid}</td>
+            <td class="fw-semibold">${escapeHtml(u.username)}</td>
+            <td>${u.isAdmin ? '<span class="badge bg-danger">Admin</span>' : '<span class="badge bg-secondary">Resident</span>'}</td>
+            <td>${u.houseid !== null ? u.houseid : '<span class="text-muted">N/A</span>'}</td>
+            <td>${u.house ? `${escapeHtml(u.house.apartment_block_num)} - Flat ${escapeHtml(u.house.house_num)}` : '<span class="text-muted">None</span>'}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">${err.message}</td></tr>`;
+      }
+    }
+
+    async function loadAdminHouses() {
+      const tbody = document.getElementById("adminHousesTableBody");
+      tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>`;
+      try {
+        const res = await fetch("/admin/houses", {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+        const houses = await res.json();
+        tbody.innerHTML = houses.map(h => `
+          <tr>
+            <td>${h.houseid}</td>
+            <td><i class="bi bi-building me-1"></i> ${escapeHtml(h.apartment_block_num)}</td>
+            <td class="fw-semibold">Flat ${escapeHtml(h.house_num)}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger">${err.message}</td></tr>`;
+      }
+    }
+
+    // HTML escape utility
+    function escapeHtml(text) {
+      if (!text) return "";
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
