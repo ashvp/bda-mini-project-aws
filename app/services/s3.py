@@ -17,7 +17,7 @@ ALLOWED_CONTENT_TYPES: Set[str] = {
     "image/webp",
     "image/gif",
 }
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
 def validate_image_file(file: UploadFile) -> str:

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 // RESTRICTED SECTOR</title>
+  <!-- Bootstrap 5.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --panel-bg: #0f141f;
+      --hazard-yellow: #f59e0b;
+      --hazard-black: #111827;
+      --neon-cyan: #00f0ff;
+      --neon-red: #ff2a5f;
+      --terminal-green: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #e2e8f0;
+      font-family: 'Fira Code', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Caution Tape Stripes */
+    .hazard-stripe {
+      height: 16px;
+      width: 100%;
+      background: repeating-linear-gradient(
+        -45deg,
+        var(--hazard-yellow),
+        var(--hazard-yellow) 20px,
+        var(--hazard-black) 20px,
+        var(--hazard-black) 40px
+      );
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+      z-index: 10;
+    }
+
+    /* Radar Background Canvas */
+    #radarCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Main Container */
+    .content-wrapper {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
+      padding: 2.5rem 1rem;
+    }
+
+    /* CCTV Camera Animation */
+    .camera-rig {
+      width: 130px;
+      height: 110px;
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .camera-mount {
+      width: 40px;
+      height: 12px;
+      background: #475569;
+      margin: 0 auto;
+      border-radius: 4px 4px 0 0;
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+    }
+
+    .camera-body {
+      width: 90px;
+      height: 52px;
+      background: linear-gradient(135deg, #334155, #1e293b);
+      border-radius: 12px;
+      margin: 0 auto;
+      border: 2px solid #64748b;
+      position: relative;
+      transform-origin: top center;
+      animation: sweep 4.5s ease-in-out infinite alternate;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    }
+
+    .camera-lens {
+      width: 32px;
+      height: 32px;
+      background: radial-gradient(circle, #0284c7 20%, #0f172a 80%);
+      border-radius: 50%;
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 3px solid #00f0ff;
+      box-shadow: 0 0 12px #00f0ff;
+    }
+
+    .camera-led {
+      width: 8px;
+      height: 8px;
+      background: var(--neon-red);
+      border-radius: 50%;
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      animation: blink 0.8s infinite;
+      box-shadow: 0 0 10px var(--neon-red);
+    }
+
+    @keyframes sweep {
+      0% { transform: rotate(-28deg); }
+      50% { transform: rotate(0deg); }
+      100% { transform: rotate(28deg); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; filter: brightness(1.3); }
+      50% { opacity: 0.15; }
+    }
+
+    /* Huge Glitch Title */
+    .glitch-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(4rem, 12vw, 8.5rem);
+      font-weight: 900;
+      color: #fff;
+      text-shadow:
+        0 0 20px rgba(255, 42, 95, 0.8),
+        3px 3px 0 var(--neon-cyan),
+        -3px -3px 0 var(--neon-red);
+      letter-spacing: 6px;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      animation: glitch 3.5s infinite;
+    }
+
+    @keyframes glitch {
+      0%, 94%, 100% { transform: skew(0deg); }
+      95% { transform: skew(-5deg) scale(1.02); }
+      97% { transform: skew(6deg) scale(0.98); }
+      99% { transform: skew(-2deg); }
+    }
+
+    /* Hologram HUD Terminal Card */
+    .hud-card {
+      background: rgba(15, 20, 31, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 1rem;
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.05);
+      backdrop-filter: blur(10px);
+      max-width: 680px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .hud-header {
+      background: rgba(0, 240, 255, 0.08);
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      padding: 0.75rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--neon-cyan);
+      letter-spacing: 1px;
+    }
+
+    .hud-body {
+      padding: 1.5rem;
+    }
+
+    .terminal-line {
+      margin-bottom: 0.65rem;
+      font-size: 0.95rem;
+    }
+
+    .badge-classified {
+      background: rgba(255, 42, 95, 0.2);
+      color: var(--neon-red);
+      border: 1px solid var(--neon-red);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    /* Action Buttons */
+    .btn-cyber-primary {
+      background: transparent;
+      color: var(--neon-cyan);
+      border: 1.5px solid var(--neon-cyan);
+      font-family: 'Fira Code', monospace;
+      font-weight: 600;
+      padding: 0.7rem 1.4rem;
+      border-radius: 6px;
+      transition: all 0.2s ease-in-out;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-cyber-primary:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .btn-cyber-danger {
+      background: transparent;
+      color: var(--neon-red);
+      border: 1.5px solid var(--neon-red);
+      font-family: 'Fira Code', monospace;
+      font-weight: 600;
+      padding: 0.7rem 1.4rem;
+      border-radius: 6px;
+      transition: all 0.2s ease-in-out;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-cyber-danger:hover {
+      background: var(--neon-red);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(255, 42, 95, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .btn-cyber-outline {
+      background: transparent;
+      color: #94a3b8;
+      border: 1.5px solid #475569;
+      font-family: 'Fira Code', monospace;
+      font-weight: 600;
+      padding: 0.7rem 1.4rem;
+      border-radius: 6px;
+      transition: all 0.2s ease-in-out;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-cyber-outline:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #64748b;
+    }
+
+    /* Punishment Modal / Alert Banner */
+    #punishmentAlert {
+      display: none;
+      background: rgba(255, 42, 95, 0.15);
+      border: 1px solid var(--neon-red);
+      color: #fff;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      animation: fadeIn 0.4s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Caution Stripe -->
+  <div class="hazard-stripe"></div>
+
+  <!-- Background Radar Canvas -->
+  <canvas id="radarCanvas"></canvas>
+
+  <!-- Content Section -->
+  <div class="content-wrapper text-center">
+
+    <!-- CCTV Camera Animation -->
+    <div class="camera-rig">
+      <div class="camera-mount"></div>
+      <div class="camera-body" id="cameraBody">
+        <div class="camera-led"></div>
+        <div class="camera-lens"></div>
+      </div>
+    </div>
+
+    <!-- Error Title -->
+    <div class="glitch-title">404</div>
+    <div class="mb-3">
+      <span class="badge-classified"><i class="bi bi-shield-exclamation"></i> ACCESS VIOLATION // RESTRICTED ZONE</span>
+    </div>
+
+    <!-- HUD Terminal Card -->
+    <div class="hud-card mb-4 text-start">
+      <div class="hud-header">
+        <span><i class="bi bi-terminal-fill me-2"></i>FACILITY DEFENSE MONITOR</span>
+        <span class="text-danger" id="threatLevel">&bull; THREAT LEVEL: NOSY INTRUDER</span>
+      </div>
+      <div class="hud-body">
+        <div class="terminal-line text-warning">
+          <i class="bi bi-exclamation-triangle-fill"></i> <strong>ALERT:</strong> You have strayed into an unassigned maintenance crawlspace.
+        </div>
+        <div class="terminal-line text-muted small">
+          Target URI: <code class="text-cyan text-info" id="attemptedPath">/restricted-sector</code>
+        </div>
+        <div class="terminal-line text-muted small">
+          Diagnostic: <code>HTTP_404_SECTOR_NOT_FOUND</code> &bull; Coordinates: Unknown
+        </div>
+        <div class="terminal-line text-light mt-3">
+          Facility policy strictly prohibits wandering around without an authorized maintenance pass. Continued poking around will trigger automatic assignment to the <strong>Emergency Sewer Unclogging Squad</strong>.
+        </div>
+
+        <!-- Self Report Alert Banner -->
+        <div id="punishmentAlert">
+          <div class="d-flex align-items-center gap-2 mb-1 text-danger fw-bold">
+            <i class="bi bi-cone-striped fs-4"></i>
+            <span>PENALTY ISSUED BY PROPERTY ADMINISTRATOR!</span>
+          </div>
+          <div class="small">
+            You have been assigned to <strong>Sector B - Wastewater Pipe Overhaul</strong>. Please collect your rubber boots and plunger at the management office by 08:00 AM.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex flex-wrap justify-content-center gap-3">
+      <a href="/" class="btn btn-cyber-primary text-decoration-none d-flex align-items-center gap-2">
+        <i class="bi bi-house-door-fill"></i> Return to Safety (Home)
+      </a>
+      <a href="/docs" class="btn btn-cyber-outline text-decoration-none d-flex align-items-center gap-2">
+        <i class="bi bi-code-slash"></i> Inspect API Docs
+      </a>
+      <button onclick="triggerPunishment()" class="btn btn-cyber-danger d-flex align-items-center gap-2" id="reportBtn">
+        <i class="bi bi-bell-fill"></i> Self-Report Trespassing
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Bottom Caution Stripe -->
+  <div class="hazard-stripe"></div>
+
+  <!-- Radar & Audio Script -->
+  <script>
+    // Extract current URL
+    document.getElementById("attemptedPath").innerText = window.location.pathname;
+
+    // Self report penalty easter egg
+    function triggerPunishment() {
+      const alert = document.getElementById("punishmentAlert");
+      const btn = document.getElementById("reportBtn");
+      alert.style.display = "block";
+      btn.classList.add("disabled");
+      btn.innerHTML = `<i class="bi bi-check-circle-fill"></i> Reported! Penalty Assigned`;
+      document.getElementById("threatLevel").innerHTML = `&bull; STATUS: DRAFTED INTO PLUMBING`;
+      document.getElementById("threatLevel").className = "text-warning";
+    }
+
+    // Dynamic radar background animation
+    const canvas = document.getElementById("radarCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    let angle = 0;
+    function drawRadar() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const maxRadius = Math.max(canvas.width, canvas.height) * 0.7;
+
+      // Draw concentric rings
+      ctx.strokeStyle = "rgba(0, 240, 255, 0.08)";
+      ctx.lineWidth = 1;
+      for (let r = 80; r < maxRadius; r += 90) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Crosshairs
+      ctx.beginPath();
+      ctx.moveTo(cx - maxRadius, cy);
+      ctx.lineTo(cx + maxRadius, cy);
+      ctx.moveTo(cx, cy - maxRadius);
+      ctx.lineTo(cx, cy + maxRadius);
+      ctx.stroke();
+
+      // Sweeping radar arm
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+
+      const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, maxRadius);
+      grad.addColorStop(0, "rgba(0, 240, 255, 0.25)");
+      grad.addColorStop(0.5, "rgba(0, 240, 255, 0.04)");
+      grad.addColorStop(1, "rgba(0, 240, 255, 0)");
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, maxRadius, -0.35, 0);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.restore();
+
+      angle += 0.015;
+      requestAnimationFrame(drawRadar);
+    }
+    drawRadar();
+  </script>
+</body>
+</html>

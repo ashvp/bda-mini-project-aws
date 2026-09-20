@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Pre-seeded Admin Credentials
     ADMIN_USERNAME: str = "admin"
-    ADMIN_PASSWORD: str = "AdminSecurePassword123!"
+    ADMIN_PASSWORD: str = "admin123"
 
     # AWS S3 Settings
     AWS_ACCESS_KEY_ID: Optional[str] = ""

@@ -87,7 +87,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from fastapi.responses import FileResponse
+from fastapi import Request
+from fastapi.responses import FileResponse, JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # Serve static web frontend assets
 os.makedirs("static", exist_ok=True)
@@ -103,6 +105,28 @@ app.include_router(maintenance_router)
 app.include_router(admin_router)
 
 
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """
+    Custom HTTP exception handler:
+    Serves the cool, animated 404 cyber-security defense page for browsers,
+    while returning JSON for programmatic API clients.
+    """
+    if exc.status_code == 404:
+        accept = request.headers.get("accept", "")
+        # If API client strictly requested JSON
+        if "application/json" in accept and "text/html" not in accept:
+            return JSONResponse(
+                status_code=404,
+                content={"detail": "Sector not found. Error 404."}
+            )
+        # For browsers / nosy visitors, serve the animated 404 page
+        not_found_file = os.path.join("static", "404.html")
+        if os.path.exists(not_found_file):
+            return FileResponse(not_found_file, status_code=404)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
 @app.get("/", tags=["General"], summary="Frontend Portal & Status")
 def root():
     index_file = os.path.join("static", "index.html")
@@ -114,6 +138,11 @@ def root():
         "redoc_url": "/redoc",
         "status": "healthy"
     }
+
+
+@app.get("/404", tags=["General"], summary="Preview 404 Page")
+def preview_404():
+    return FileResponse(os.path.join("static", "404.html"), status_code=404)
 
 
 @app.get("/api/info", tags=["General"], summary="API Meta Info")
@@ -133,4 +162,5 @@ def health_check():
         "database": "connected",
         "storage_mode": "mock_s3" if settings.USE_LOCAL_S3_MOCK else "aws_s3"
     }
+
 

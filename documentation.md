@@ -7,11 +7,11 @@ A modern, modular FastAPI application designed for residential property maintena
 ## Table of Contents
 
 1. [Architecture Overview](#architecture-overview)
-2. [Database Schema & Design](#database-schema--design)
+2. [Database Schema &amp; Design](#database-schema--design)
    - [ER Diagram](#er-diagram)
-   - [Tables & Columns](#tables--columns)
-3. [Environment Variables & Configuration](#environment-variables--configuration)
-4. [Authentication & Authorization](#authentication--authorization)
+   - [Tables &amp; Columns](#tables--columns)
+3. [Environment Variables &amp; Configuration](#environment-variables--configuration)
+4. [Authentication &amp; Authorization](#authentication--authorization)
    - [Admin Pre-seeding](#admin-pre-seeding)
    - [Unified Login](#unified-login)
    - [Role-Based Access Control (RBAC)](#role-based-access-control-rbac)
@@ -117,13 +117,17 @@ erDiagram
 ### Tables & Columns
 
 #### 1. `houses`
+
 Stores individual residential flats/units across different apartment blocks.
+
 - **`houseid`** (`INTEGER`, Primary Key, Autoincrement): Unique identifier for each house.
 - **`apartment_block_num`** (`VARCHAR(50)`, Not Null, Case-Insensitive / `COLLATE NOCASE`): Name or number of the apartment block/tower (e.g., `"Block A"`, `"tower 2"`). Handled case-insensitively so that `"Block A"`, `"block a"`, and `"BLOCK A"` map to the same house.
 - **`house_num`** (`VARCHAR(50)`, Not Null): Flat/Room number within that block (e.g., `"102"`, `"Penthouse 4"`).
 
 #### 2. `users`
+
 Stores all user accounts (residents and system administrators).
+
 - **`userid`** (`INTEGER`, Primary Key, Autoincrement): Unique identifier for each user.
 - **`username`** (`VARCHAR(100)`, Unique, Not Null, Indexed): Unique login handle.
 - **`pw_hashed`** (`VARCHAR(255)`, Not Null): Salted bcrypt hash of the user's password.
@@ -131,7 +135,9 @@ Stores all user accounts (residents and system administrators).
 - **`isAdmin`** (`BOOLEAN`, Not Null, Default `False`): `True` for administrators, `False` for residents.
 
 #### 3. `maintanance`
+
 Stores all submitted maintenance requests and tracks technician assignment.
+
 - **`maintanance_id`** (`INTEGER`, Primary Key, Autoincrement): Unique ticket identifier.
 - **`date`** (`DATETIME`, Not Null, Default `UTC Now`): Timestamp when the ticket was filed.
 - **`houseid`** (`INTEGER`, Foreign Key referencing `houses.houseid`, Not Null): Property location where maintenance is needed.
@@ -147,40 +153,45 @@ Stores all submitted maintenance requests and tracks technician assignment.
 
 The application reads configuration through `app/config.py` using `pydantic-settings` from `.env`:
 
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `PROJECT_NAME` | String | `Property Maintenance Tracking API` | Name of the application |
-| `DEBUG` | Boolean | `True` | Debug mode toggle |
-| `SECRET_KEY` | String | *Required in Prod* | Secret key for JWT HS256 signature |
-| `ALGORITHM` | String | `HS256` | JWT signature algorithm |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Integer | `1440` (24h) | JWT expiration time in minutes |
-| `DATABASE_URL` | String | `sqlite:///./maintenance.db` | SQLAlchemy database connection string |
-| `ADMIN_USERNAME` | String | `admin` | Username for pre-seeded administrator |
-| `ADMIN_PASSWORD` | String | `AdminSecurePassword123!` | Password for pre-seeded administrator |
-| `AWS_ACCESS_KEY_ID` | String | `""` | AWS IAM access key with S3 PutObject permission |
-| `AWS_SECRET_ACCESS_KEY` | String | `""` | AWS IAM secret key |
-| `AWS_REGION` | String | `us-east-1` | AWS S3 region |
-| `AWS_S3_BUCKET_NAME` | String | `property-maintenance-bucket`| Target AWS S3 bucket name |
-| `USE_LOCAL_S3_MOCK` | Boolean | `True` | If `True`, stores images locally in `./uploads` for offline testing |
-| `LOCAL_UPLOAD_DIR` | String | `./uploads` | Directory for local file storage when mock is active |
+| Variable                        | Type    | Default                               | Description                                                            |
+| ------------------------------- | ------- | ------------------------------------- | ---------------------------------------------------------------------- |
+| `PROJECT_NAME`                | String  | `Property Maintenance Tracking API` | Name of the application                                                |
+| `DEBUG`                       | Boolean | `True`                              | Debug mode toggle                                                      |
+| `SECRET_KEY`                  | String  | *Required in Prod*                  | Secret key for JWT HS256 signature                                     |
+| `ALGORITHM`                   | String  | `HS256`                             | JWT signature algorithm                                                |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Integer | `1440` (24h)                        | JWT expiration time in minutes                                         |
+| `DATABASE_URL`                | String  | `sqlite:///./maintenance.db`        | SQLAlchemy database connection string                                  |
+| `ADMIN_USERNAME`              | String  | `admin`                             | Username for pre-seeded administrator                                  |
+| `ADMIN_PASSWORD`              | String  | `AdminSecurePassword123!`           | Password for pre-seeded administrator                                  |
+| `AWS_ACCESS_KEY_ID`           | String  | `""`                                | AWS IAM access key with S3 PutObject permission                        |
+| `AWS_SECRET_ACCESS_KEY`       | String  | `""`                                | AWS IAM secret key                                                     |
+| `AWS_REGION`                  | String  | `us-east-1`                         | AWS S3 region                                                          |
+| `AWS_S3_BUCKET_NAME`          | String  | `property-maintenance-bucket`       | Target AWS S3 bucket name                                              |
+| `USE_LOCAL_S3_MOCK`           | Boolean | `True`                              | If`True`, stores images locally in `./uploads` for offline testing |
+| `LOCAL_UPLOAD_DIR`            | String  | `./uploads`                         | Directory for local file storage when mock is active                   |
 
 ---
 
 ## Authentication & Authorization
 
 ### Admin Pre-seeding
+
 During FastAPI's startup (`lifespan` handler in `app/main.py`), the database is checked for the admin account specified by `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
+
 - If the administrator does not exist, it is automatically created with `isAdmin=True` and `houseid=None`.
 - The password is saved using salted **bcrypt** hashing.
 
 ### Unified Login
+
 Both residents and admins log in through the same endpoint:
+
 - **Endpoint**: `POST /auth/login`
 - Accepts **JSON** payload (`{"username": "...", "password": "..."}`) or **Form-data** (native support for Swagger UI's **Authorize** modal).
 - Validates the password against the bcrypt hash stored in the `users` table.
 - Returns a signed JWT token containing claims: `{"sub": username, "user_id": userid, "is_admin": isAdmin}`.
 
 ### Role-Based Access Control (RBAC)
+
 - **`get_current_user`**: Validates the Bearer token from the `Authorization: Bearer <token>` header, decodes the JWT, and loads the active user record from the database.
 - **`get_current_admin`**: Verifies that `current_user.isAdmin == True`. If not, returns `403 Forbidden` with `"Access forbidden: Administrator privileges required."`.
 - **Resident Security**: When viewing a ticket at `GET /maintenance/{maintanance_id}`, residents can only view tickets belonging to their own `userid`. Admins have permission to view all tickets.
@@ -192,6 +203,7 @@ Both residents and admins log in through the same endpoint:
 When residents submit a maintenance ticket, they upload a photo of the defect (e.g. water leakage or damaged AC unit).
 
 ### Upload Workflow
+
 1. Resident sends a `multipart/form-data` request with fields:
    - `problem_category` (String)
    - `details` (String)
@@ -211,6 +223,7 @@ When residents submit a maintenance ticket, they upload a photo of the defect (e
 ### Authentication Endpoints
 
 #### 1. Resident Registration
+
 - **Route**: `POST /auth/register`
 - **Auth Required**: No (Public)
 - **Request Body** (`application/json`):
@@ -238,6 +251,7 @@ When residents submit a maintenance ticket, they upload a photo of the defect (e
   ```
 
 #### 2. Unified Login
+
 - **Route**: `POST /auth/login`
 - **Auth Required**: No (Public)
 - **Request Body** (supports both JSON and Form Data):
@@ -267,6 +281,7 @@ When residents submit a maintenance ticket, they upload a photo of the defect (e
   ```
 
 #### 3. Current User Profile
+
 - **Route**: `GET /auth/me`
 - **Auth Required**: Yes (Resident or Admin)
 - **Header**: `Authorization: Bearer <access_token>`
@@ -277,6 +292,7 @@ When residents submit a maintenance ticket, they upload a photo of the defect (e
 ### Resident Maintenance Endpoints
 
 #### 1. Submit Maintenance Request
+
 - **Route**: `POST /maintenance`
 - **Auth Required**: Yes (Resident)
 - **Header**: `Authorization: Bearer <access_token>`
@@ -316,12 +332,14 @@ When residents submit a maintenance ticket, they upload a photo of the defect (e
   ```
 
 #### 2. View My Maintenance Requests
+
 - **Route**: `GET /maintenance/my`
 - **Auth Required**: Yes (Resident)
 - **Header**: `Authorization: Bearer <access_token>`
 - **Response** (`200 OK`): Array of maintenance tickets created by the logged-in resident.
 
 #### 3. View Specific Ticket Details
+
 - **Route**: `GET /maintenance/{maintanance_id}`
 - **Auth Required**: Yes (Ticket Owner or Admin)
 - **Header**: `Authorization: Bearer <access_token>`
@@ -334,6 +352,7 @@ When residents submit a maintenance ticket, they upload a photo of the defect (e
 All admin endpoints require an active token with `isAdmin == True`.
 
 #### 1. Oversee All Maintenance Requests
+
 - **Route**: `GET /admin/maintenance`
 - **Auth Required**: Yes (Admin only)
 - **Header**: `Authorization: Bearer <admin_token>`
@@ -344,6 +363,7 @@ All admin endpoints require an active token with `isAdmin == True`.
 - **Response** (`200 OK`): List of all maintenance tickets matching criteria.
 
 #### 2. Assign Technician to Problem
+
 - **Route**: `PATCH /admin/maintenance/{maintanance_id}/assign`
 - **Auth Required**: Yes (Admin only)
 - **Header**: `Authorization: Bearer <admin_token>`
@@ -370,16 +390,19 @@ All admin endpoints require an active token with `isAdmin == True`.
   ```
 
 #### 3. List Registered Users
+
 - **Route**: `GET /admin/users`
 - **Auth Required**: Yes (Admin only)
 - **Response** (`200 OK`): List of all registered users, their roles, and linked houses.
 
 #### 4. List Registered Houses
+
 - **Route**: `GET /admin/houses`
 - **Auth Required**: Yes (Admin only)
 - **Response** (`200 OK`): List of all registered blocks and flats.
 
 #### 5. Dashboard Statistics
+
 - **Route**: `GET /admin/stats`
 - **Auth Required**: Yes (Admin only)
 - **Response** (`200 OK`):
@@ -407,34 +430,35 @@ All admin endpoints require an active token with `isAdmin == True`.
 ### Local Development Setup
 
 1. **Activate the Virtual Environment**:
+
    - On Windows (PowerShell):
      ```powershell
-     .\.venv\Scripts\Activate.ps1
+     .\.venv\Scripts\activate
      ```
    - On Linux / macOS:
      ```bash
+
      source .venv/bin/activate
      ```
-
 2. **Install Requirements**:
+
    ```bash
    pip install -r requirements.txt
    ```
-
 3. **Configure Environment Variables**:
    Copy `.env.example` to `.env` if not already present:
+
    ```bash
    cp .env.example .env
    ```
-
 4. **Launch the FastAPI Server**:
+
    ```bash
    uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
    ```
-
 5. **Access Interactive Documentation**:
+
    - **Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-   - **ReDoc**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
 ---
 
@@ -454,9 +478,10 @@ All 13 test cases verify registration, bcrypt authentication, role enforcement, 
 
 ## Web Frontend (Bootstrap 5 + Vanilla JS)
 
-The application comes with an integrated, responsive single-page web frontend located at [`static/index.html`](file:///D:/SNU/Semester%207/Big%20Data/Lab/lab9/static/index.html) and served directly on `http://127.0.0.1:8000/`.
+The application comes with an integrated, responsive single-page web frontend located at [`static/index.html`](<file:///D:/SNU/Semester%207/Big%20Data/Lab/lab9/static/index.html>) and served directly on `http://127.0.0.1:8000/`.
 
 ### Key Features:
+
 1. **Unified Authentication Screen**:
    - **Login Tab**: Used by both residents and administrators. Features a "Quick Fill Admin" shortcut for evaluation testing.
    - **Resident Register Tab**: Allows new residents to enter their username, password, apartment block, and flat number.
@@ -474,15 +499,16 @@ The application comes with an integrated, responsive single-page web frontend lo
 
 ### AWS Hosting Guide
 
-When deploying to AWS (e.g., **AWS EC2**, **AWS Elastic Beanstalk**, or **AWS ECS/Fargate**):
+When deploying to AWS (e.g., **AWS EC2**):
 
 1. **Create an S3 Bucket**:
+
    - Name: `property-maintenance-bucket` (or any unique name).
    - Configure Public Access or Presigned URLs depending on your privacy policy.
    - Attach CORS configuration to allow GET requests from your web domain.
-
 2. **IAM Policy for the Application**:
    Create an IAM Role with permissions for the bucket:
+
    ```json
    {
      "Version": "2012-10-17",
@@ -498,8 +524,8 @@ When deploying to AWS (e.g., **AWS EC2**, **AWS Elastic Beanstalk**, or **AWS EC
      ]
    }
    ```
-
 3. **Set Production Environment Variables**:
+
    ```env
    USE_LOCAL_S3_MOCK=False
    AWS_REGION=us-east-1
@@ -510,9 +536,8 @@ When deploying to AWS (e.g., **AWS EC2**, **AWS Elastic Beanstalk**, or **AWS EC
    ADMIN_USERNAME=property_admin
    ADMIN_PASSWORD=A_Very_Strong_Admin_Password!
    ```
+4. **Launch Server with Uvicorn**:
 
-4. **Launch Production Server with Gunicorn/Uvicorn**:
    ```bash
    uvicorn app.main:app --host 0.0.0.0 --port 80 --workers 4
    ```
-
